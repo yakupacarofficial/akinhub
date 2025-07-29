@@ -86,13 +86,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           
           // Sensor Charts Grid
           SliverPadding(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            padding: EdgeInsets.all(
+              MediaQuery.of(context).size.width < 600 
+                ? AppConstants.smallPadding 
+                : AppConstants.defaultPadding
+            ),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.85,
-                crossAxisSpacing: AppConstants.smallPadding,
-                mainAxisSpacing: AppConstants.smallPadding,
+                childAspectRatio: MediaQuery.of(context).size.width < 600 ? 0.55 : 0.85,
+                crossAxisSpacing: MediaQuery.of(context).size.width < 600 ? 4 : AppConstants.smallPadding,
+                mainAxisSpacing: MediaQuery.of(context).size.width < 600 ? 4 : AppConstants.smallPadding,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -107,9 +111,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           
-          // Bottom padding
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 80),
+          // Bottom padding - reduced for mobile
+          SliverToBoxAdapter(
+            child: SizedBox(height: MediaQuery.of(context).size.width < 600 ? 20 : 80),
           ),
         ],
       ),
@@ -117,9 +121,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSummarySection(List<dynamic> sensorReadings) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      margin: const EdgeInsets.all(AppConstants.defaultPadding),
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      margin: EdgeInsets.all(isMobile ? AppConstants.smallPadding : AppConstants.defaultPadding),
+      padding: EdgeInsets.all(isMobile ? AppConstants.smallPadding : AppConstants.defaultPadding),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
@@ -326,40 +331,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showSensorDetails(dynamic sensorReading) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxHeight = screenHeight * 0.8; // Maximum 80% of screen height
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.cardColor,
+      isScrollControlled: true, // Allow scrolling
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.textSecondaryColor,
-                borderRadius: BorderRadius.circular(2),
+        constraints: BoxConstraints(
+          maxHeight: maxHeight,
+        ),
+        padding: EdgeInsets.all(
+          isMobile ? AppConstants.smallPadding : AppConstants.defaultPadding
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.textSecondaryColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(height: AppConstants.defaultPadding),
-            Text(
-              sensorReading.sensorName,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppTheme.textPrimaryColor,
-                fontWeight: FontWeight.bold,
+              SizedBox(height: isMobile ? AppConstants.smallPadding : AppConstants.defaultPadding),
+              
+              // Title
+              Text(
+                sensorReading.sensorName,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppTheme.textPrimaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: AppConstants.smallPadding),
-            ChartCard(
-              sensorReading: sensorReading,
-              isExpanded: true,
-            ),
-            const SizedBox(height: AppConstants.defaultPadding),
-          ],
+              SizedBox(height: isMobile ? 8 : AppConstants.smallPadding),
+              
+              // Chart Card with fixed height for mobile
+              Container(
+                height: isMobile ? screenHeight * 0.35 : 200,
+                child: ChartCard(
+                  sensorReading: sensorReading,
+                  isExpanded: true,
+                ),
+              ),
+              
+              // Bottom padding
+              SizedBox(height: isMobile ? 8 : AppConstants.smallPadding),
+            ],
+          ),
         ),
       ),
     );

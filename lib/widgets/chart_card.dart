@@ -1,38 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../models/sensor_data.dart';
 import '../core/theme.dart';
 import '../core/constants.dart';
+import '../models/sensor_data.dart';
+import '../utils/helpers.dart';
 
 class ChartCard extends StatelessWidget {
   final SensorReading sensorReading;
-  final VoidCallback? onTap;
   final bool isExpanded;
+  final VoidCallback? onTap;
 
   const ChartCard({
     super.key,
     required this.sensorReading,
-    this.onTap,
     this.isExpanded = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.all(AppConstants.smallPadding),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          padding: EdgeInsets.all(
+            isMobile ? AppConstants.smallPadding : AppConstants.defaultPadding
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               _buildHeader(context),
-              const SizedBox(height: AppConstants.smallPadding),
+              SizedBox(height: isMobile ? 1 : AppConstants.smallPadding),
               _buildValueDisplay(context),
-              const SizedBox(height: AppConstants.smallPadding),
-              _buildChart(context),
+              SizedBox(height: isMobile ? 1 : AppConstants.smallPadding),
+              Flexible(
+                child: _buildChart(context),
+              ),
             ],
           ),
         ),
@@ -41,6 +59,8 @@ class ChartCard extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -52,11 +72,12 @@ class ChartCard extends StatelessWidget {
                 sensorReading.sensorName,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
+                  fontSize: isMobile ? 14 : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: isMobile ? 2 : 4),
               Row(
                 children: [
                   _buildStatusIndicator(),
@@ -82,6 +103,7 @@ class ChartCard extends StatelessWidget {
   }
 
   Widget _buildValueDisplay(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     final changePercentage = sensorReading.changePercentage;
     final isPositive = changePercentage > 0;
     final isNegative = changePercentage < 0;
@@ -100,6 +122,7 @@ class ChartCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimaryColor,
+                      fontSize: isMobile ? 20 : null,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -112,7 +135,7 @@ class ChartCard extends StatelessWidget {
                 ],
               ),
               if (sensorReading.previousValue != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: isMobile ? 2 : 4),
                 Row(
                   children: [
                     Icon(
@@ -158,86 +181,80 @@ class ChartCard extends StatelessWidget {
 
   Widget _buildChart(BuildContext context) {
     if (sensorReading.history.isEmpty) {
-      return const SizedBox(
-        height: 100,
-        child: Center(
-          child: Text('No data available'),
-        ),
+      return const Center(
+        child: Text('No data available'),
       );
     }
 
-    return SizedBox(
-      height: isExpanded ? 200 : 100,
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: 1,
-            getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: AppTheme.textHintColor.withOpacity(0.1),
-                strokeWidth: 1,
-              );
-            },
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 1,
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: AppTheme.textHintColor.withOpacity(0.1),
+              strokeWidth: 1,
+            );
+          },
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
           ),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: false,
-                reservedSize: 30,
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: false,
-                reservedSize: 40,
-              ),
+          topTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: false,
+              reservedSize: 30,
             ),
           ),
-          borderData: FlBorderData(
-            show: false,
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: false,
+              reservedSize: 40,
+            ),
           ),
-          minX: 0,
-          maxX: (sensorReading.history.length - 1).toDouble(),
-          minY: _getMinY(),
-          maxY: _getMaxY(),
-          lineBarsData: [
-            LineChartBarData(
-              spots: _getChartSpots(),
-              isCurved: true,
+        ),
+        borderData: FlBorderData(
+          show: false,
+        ),
+        minX: 0,
+        maxX: (sensorReading.history.length - 1).toDouble(),
+        minY: _getMinY(),
+        maxY: _getMaxY(),
+        lineBarsData: [
+          LineChartBarData(
+            spots: _getChartSpots(),
+            isCurved: true,
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.chartColors[0].withOpacity(0.8),
+                AppTheme.chartColors[0].withOpacity(0.1),
+              ],
+            ),
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              show: false,
+            ),
+            belowBarData: BarAreaData(
+              show: true,
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.chartColors[0].withOpacity(0.8),
-                  AppTheme.chartColors[0].withOpacity(0.1),
+                  AppTheme.chartColors[0].withOpacity(0.3),
+                  AppTheme.chartColors[0].withOpacity(0.0),
                 ],
-              ),
-              barWidth: 3,
-              isStrokeCapRound: true,
-              dotData: FlDotData(
-                show: false,
-              ),
-              belowBarData: BarAreaData(
-                show: true,
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.chartColors[0].withOpacity(0.3),
-                    AppTheme.chartColors[0].withOpacity(0.0),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
